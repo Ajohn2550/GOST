@@ -157,7 +157,7 @@ function renderMiniCard(card: Card, ctx: RenderCtx): string {
     ? `<span class="chip${late ? ' late' : ''}">${e(card.due_on)}${late ? ' late' : ''}</span>`
     : '';
   const inside = count > 0 ? `<span class="chip" title="Children">${count} inside</span>` : '';
-  return `<article class="card${late ? ' is-late' : ''}" draggable="true" data-id="${card.id}" data-parent-id="${card.parent_id ?? ''}" data-type="${card.type}">
+  return `<article class="card${late ? ' is-late' : ''}" draggable="true" data-id="${card.id}" data-parent-id="${card.parent_id ?? ''}" data-type="${card.type}" data-rank="${card.rank}">
     <div class="card-line">
       <a href="${href(ctx.origin, '/cards/' + String(card.id))}">${e(card.title)}</a>
       <span class="pri pri-${card.priority}">${e(priorityName(card.priority))}</span>
@@ -198,17 +198,13 @@ function renderColumns(cards: Card[], parentId: number | null, ctx: RenderCtx): 
   return `<div class="board-wrap"><div class="board">${columns}</div></div>`;
 }
 
-function statusHeaders(): string {
-  return STATUSES.map((status) => `<div>${e(status.name)}</div>`).join('');
-}
-
 function renderFocus(card: Card, childrenOf: Map<number, Card[]>, ctx: RenderCtx): string {
   const count = ctx.counts.get(card.id) ?? 0;
   const late = isLate(card.due_on, card.status, ctx.today);
   const kids = bySwimlane(childrenOf.get(card.id) ?? []);
   const nested =
     card.type === 'epic'
-      ? `<div class="lane-grid headers">${statusHeaders()}</div>${kids.map((child) => renderSwimlane(child, childrenOf, ctx)).join('')}`
+      ? `<div class="board-wrap"><div class="lane-grid headers">${STATUSES.map((status) => `<div>${e(status.name)}</div>`).join('')}</div>${kids.map((child) => renderSwimlane(child, childrenOf, ctx)).join('')}</div>`
       : kids.map((child) => renderSwimlane(child, childrenOf, ctx)).join('');
   return `<section class="lane lane-${card.type}" data-lane="${card.id}">
     <div class="focus-bar">
@@ -673,7 +669,7 @@ button, .button { display: inline-block; padding: 8px 14px; border: 0; border-ra
 .lane-epic { background: #fbf3e4; border-left: 2px solid #b5812a; }
 .lane-goal > .lane-children,
 .lane-initiative > .lane-children,
-.lane-epic > .lane-children { margin: 4px 0 0 4px; padding-left: 4px; border-left: 0; }
+.lane-epic > .lane-children { margin: 4px 0 0 0; padding-left: 4px; border-left: 0; }
 .focus-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-height: 2rem; }
 .lane-toggle { padding: 0 4px; min-width: 1.25rem; line-height: 1; }
 .focus-bar a { flex: 1; font-weight: 650; text-decoration: none; color: var(--ink); }
@@ -709,7 +705,7 @@ button, .button { display: inline-block; padding: 8px 14px; border: 0; border-ra
 fieldset { border: 1px solid var(--line); border-radius: 12px; margin: 0; padding: 10px 12px; }
 `;
 
-// Goals, initiatives, and epics are not draggable on All. Task and sub-task drops still set rank.
+// A task on All sits alone in its row. Rank comes from the task under the pointer, not from cell siblings.
 const PAGE_SCRIPT = `
 (function () {
   var meta = document.querySelector('meta[name="csrf"]');
@@ -801,6 +797,42 @@ const PAGE_SCRIPT = `
     return null;
   }
 
+  function rankOf(card) {
+    var rank = Number(card.getAttribute('data-rank'));
+    return rank === rank ? rank : 0;
+  }
+
+  function nextRankSibling(card, status) {
+    var parent = parentOf(card);
+    var rank = rankOf(card);
+    var best = null;
+    var bestRank = Infinity;
+    document.querySelectorAll('.card[data-type="task"]').forEach(function (other) {
+      if (other === card || other === dragging) return;
+      if (parentOf(other) !== parent) return;
+      var otherCell = other.closest('.cell');
+      if (!otherCell || (otherCell.getAttribute('data-status') || '') !== status) return;
+      var otherRank = rankOf(other);
+      if (otherRank > rank && otherRank < bestRank) {
+        best = other;
+        bestRank = otherRank;
+      }
+    });
+    return best;
+  }
+
+  function taskBefore(cell, y) {
+    var cards = cell.querySelectorAll(':scope > .card');
+    var hit = null;
+    for (var i = 0; i < cards.length; i++) {
+      if (cards[i] !== dragging) hit = cards[i];
+    }
+    if (!hit) return null;
+    var box = hit.getBoundingClientRect();
+    if (y < box.top + box.height / 2) return hit;
+    return nextRankSibling(hit, cell.getAttribute('data-status') || '');
+  }
+
   document.querySelectorAll('.cell').forEach(function (cell) {
     cell.addEventListener('dragover', function (e) {
       if (!dragging) return;
@@ -819,16 +851,13 @@ const PAGE_SCRIPT = `
       var id = dragging.getAttribute('data-id');
       var type = dragging.getAttribute('data-type');
       var status = cell.getAttribute('data-status') || '';
-      var reorder = board !== 'all' || type === 'task' || type === 'subtask';
       var from = dragging.closest('.cell');
-      var fromStatus = from ? (from.getAttribute('data-status') || '') : '';
-      if (!reorder && status === fromStatus) return;
-      var before = reorder ? cardAfter(cell, e.clientY) : null;
+      if (board === 'all' && type === 'task' && from === cell) return;
+      var before = board === 'all' && type === 'task' ? taskBefore(cell, e.clientY) : cardAfter(cell, e.clientY);
       var body = new URLSearchParams();
       body.set('csrf', csrf);
       body.set('status', status);
       body.set('parent_id', parentOf(dragging));
-      if (!reorder) body.set('keep_rank', '1');
       if (before) body.set('before_id', before.getAttribute('data-id') || '');
       fetch('/cards/' + id + '/move', {
         method: 'POST',

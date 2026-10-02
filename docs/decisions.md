@@ -6,9 +6,9 @@ Each choice below is the one the docs and the first build follow.
 
 A Goal is a board of Initiatives, an Initiative is a board of Epics, an Epic is a board of Tasks, and a Task is a board of Sub-tasks. Home is the board of Goals.
 
-The All view shows the same cards again. Columns stay the five statuses. Swimlanes follow the tree, so a parent swimlane contains the next child level. Sub-tasks are cards inside the Task swimlane.
+The All view shows the same cards again. A Goal, an Initiative, and an Epic are focus bands, not cards in a status column. Tasks and sub-tasks sit in the five columns inside each epic.
 
-Creating, editing, and reordering stay on the nested board. The All view is for seeing the tree and changing status. A drop onto a different parent is refused. The first version does not re-parent a card.
+Creating a card stays on the nested board. The All view can change status for a task or a sub-task, and that drop updates rank. A task drop uses the task under the pointer: above it inserts before, below it inserts after, and an empty cell appends. A task dropped on its own cell stays put. A drop onto a different parent is refused. The first version does not re-parent a card.
 
 Collapsed swimlanes are remembered in the browser. The server does not store that preference.
 
@@ -36,7 +36,7 @@ Every card has a priority. The scale is fixed.
 
 On a nested board, drag order inside a column stays put when priority changes. The badge shows the priority. People move a card by dragging it.
 
-On the All view, sibling swimlanes sort by priority, urgent first, then by title. A swimlane spans every column, and a card's drag rank lives inside one column, so that rank cannot order siblings that sit in different columns. Priority is the order that works across the row.
+On the All view, sibling focus areas sort by priority, urgent first, then by title. A focus area spans every column, and a card's drag rank lives inside one column, so that rank cannot order siblings that sit in different columns. Priority is the order that works across the row.
 
 ## A few accounts on each container
 

@@ -45,7 +45,7 @@ The areas nest. A Goal is a green region. An Initiative inside it is blue. An Ep
 
 The five status columns appear inside each epic. A task card sits in the column of its status. Sub-tasks are cards in the columns under that task, in rank order.
 
-Dragging a task or a sub-task changes status among cards that share a parent, and updates rank. A drop onto a different parent is refused. A Goal, an Initiative, or an Epic is not dragged on this view. Their status changes on the board page or the edit page. Creating a card and reordering siblings happen on the nested board. Fields and comments are on the card's edit page.
+Dragging a task or a sub-task changes status among cards that share a parent, and updates rank. On a task, the upper half of another task inserts before it and the lower half inserts after it. An empty cell appends. Dropping a task on its own cell does nothing. A drop onto a different parent is refused. A Goal, an Initiative, or an Epic is not dragged on this view. Their status changes on the board page or the edit page. Creating a card stays on the nested board. Fields and comments are on the card's edit page.
 
 Home and every nested board link to the All view.
 

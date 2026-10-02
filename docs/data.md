@@ -92,7 +92,7 @@ Status is the column. The column order is Backlog, Ready, In progress, Blocked, 
 
 On a nested board, the column sorts by `rank`. Priority does not change `rank`.
 
-On the All view, swimlanes for the same parent sort by `priority` ascending, then by title ignoring case. Sub-task cards in one cell sort by `rank`. A move on the All view updates `status` and, for a sub-task dropped among its siblings, `rank`. The server refuses a move whose new parent would differ.
+On the All view, focus areas for the same parent sort by `priority` ascending, then by title ignoring case. Sub-task cards in one cell sort by `rank`. A task or sub-task move updates `status` and `rank`. A task dropped on its own cell is not sent. A task dropped on the upper half of another task is inserted before that task. The lower half is inserted after it. An empty cell appends. Goals, initiatives, and epics are not moved from this view. The server refuses a move whose new parent would differ.
 
 ## Deletes
 
