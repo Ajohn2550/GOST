@@ -39,18 +39,13 @@ Dragging a card moves it within a column or to another column. A status control 
 
 ## All view
 
-The All view is a second board of every card in the container. The columns are the five statuses above. The rows are swimlanes, and each swimlane contains the next child level.
+The All view shows the whole tree. A Goal, an Initiative, and an Epic are full-width focus areas, not cards in a status column. Each area has a bar with the title, a status badge, a priority badge, and a child count. The title opens that card's board page.
 
-- Each Goal is a swimlane. Its card sits in the column of the Goal's status. Inside it are that Goal's Initiatives.
-- Each Initiative is a swimlane inside its Goal, with its Epics inside it.
-- Each Epic is a swimlane inside its Initiative, with its Tasks inside it.
-- Each Task is a swimlane inside its Epic. Sub-tasks are cards in that Task's columns. A Sub-task has no swimlane of its own.
-- Sibling swimlanes are ordered by priority, urgent first, then by title.
-- Sub-tasks inside one column stay in the manual order from the Task board.
-- A swimlane can be collapsed. The collapsed state stays in the browser.
-- An empty parent still shows its swimlane.
+The areas nest. A Goal is a green region. An Initiative inside it is blue. An Epic inside that is warm amber. Each has its own left border. A collapsed area hides what is inside it and keeps the bar. The collapsed state stays in the browser. An empty parent still shows its area. Sibling areas are ordered by priority, urgent first, then by title.
 
-Dragging on the All view changes status only among cards that share a parent. A drop onto a different parent is refused. Creating a card and reordering siblings happen on the nested board. The card title opens that page. Fields and comments are on the card's edit page.
+The five status columns appear inside each epic. A task card sits in the column of its status. Sub-tasks are cards in the columns under that task, in rank order.
+
+Dragging a task or a sub-task changes status among cards that share a parent, and updates rank. A drop onto a different parent is refused. A Goal, an Initiative, or an Epic is not dragged on this view. Their status changes on the board page or the edit page. Creating a card and reordering siblings happen on the nested board. Fields and comments are on the card's edit page.
 
 Home and every nested board link to the All view.
 

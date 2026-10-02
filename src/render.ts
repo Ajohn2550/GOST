@@ -172,7 +172,6 @@ function renderMiniCard(card: Card, ctx: RenderCtx): string {
     <form method="post" action="${href(ctx.origin, '/cards/' + String(card.id) + '/move')}">
       <input type="hidden" name="csrf" value="${e(ctx.viewer.csrf)}">
       <input type="hidden" name="next" value="${e(ctx.nextPath)}">
-      ${ctx.mode === 'all' && card.type !== 'subtask' ? '<input type="hidden" name="keep_rank" value="1">' : ''}
       <select name="status" aria-label="Status" onchange="this.form.submit()">${statusOptions}</select>
     </form>
   </article>`;
@@ -199,30 +198,49 @@ function renderColumns(cards: Card[], parentId: number | null, ctx: RenderCtx): 
   return `<div class="board-wrap"><div class="board">${columns}</div></div>`;
 }
 
-function renderSwimlane(card: Card, childrenOf: Map<number, Card[]>, ctx: RenderCtx): string {
+function statusHeaders(): string {
+  return STATUSES.map((status) => `<div>${e(status.name)}</div>`).join('');
+}
+
+function renderFocus(card: Card, childrenOf: Map<number, Card[]>, ctx: RenderCtx): string {
+  const count = ctx.counts.get(card.id) ?? 0;
+  const late = isLate(card.due_on, card.status, ctx.today);
+  const kids = bySwimlane(childrenOf.get(card.id) ?? []);
+  const nested =
+    card.type === 'epic'
+      ? `<div class="lane-grid headers">${statusHeaders()}</div>${kids.map((child) => renderSwimlane(child, childrenOf, ctx)).join('')}`
+      : kids.map((child) => renderSwimlane(child, childrenOf, ctx)).join('');
+  return `<section class="lane lane-${card.type}" data-lane="${card.id}">
+    <div class="focus-bar">
+      <button type="button" class="lane-toggle quiet" aria-expanded="true">Collapse</button>
+      <a href="${href(ctx.origin, '/cards/' + String(card.id))}">${e(card.title)}</a>
+      <span class="chip${late ? ' late' : ''}">${e(statusName(card.status))}</span>
+      <span class="pri pri-${card.priority}">${e(priorityName(card.priority))}</span>
+      <span class="chip">${count} inside</span>
+    </div>
+    <div class="lane-children">${nested}</div>
+  </section>`;
+}
+
+function renderTaskLane(card: Card, childrenOf: Map<number, Card[]>, ctx: RenderCtx): string {
   const cells = STATUSES.map((status) => {
     const inner = card.status === status.value ? renderMiniCard(card, ctx) : '';
     return `<div class="cell" data-status="${status.value}" data-parent-id="${card.parent_id ?? ''}">${inner}</div>`;
   }).join('');
-  const kids = childrenOf.get(card.id) ?? [];
-  let nested = '';
-  const heading = childHeading(card.type);
-  if (heading === 'Sub-tasks') {
-    const subs = byRank(kids);
-    const subCells = STATUSES.map((status) => {
-      const inner = subs
-        .filter((item) => item.status === status.value)
-        .map((item) => renderMiniCard(item, ctx))
-        .join('');
-      return `<div class="cell" data-status="${status.value}" data-parent-id="${card.id}">${inner}</div>`;
-    }).join('');
-    nested = `<div class="lane-children"><div class="lane-grid">${subCells}</div></div>`;
-  } else if (heading) {
-    nested = `<div class="lane-children">${bySwimlane(kids)
-      .map((child) => renderSwimlane(child, childrenOf, ctx))
-      .join('')}</div>`;
-  }
-  return `<section class="lane" data-lane="${card.id}"><div class="lane-grid">${cells}</div>${nested}</section>`;
+  const subs = byRank(childrenOf.get(card.id) ?? []);
+  const subCells = STATUSES.map((status) => {
+    const inner = subs
+      .filter((item) => item.status === status.value)
+      .map((item) => renderMiniCard(item, ctx))
+      .join('');
+    return `<div class="cell" data-status="${status.value}" data-parent-id="${card.id}">${inner}</div>`;
+  }).join('');
+  return `<section class="lane" data-lane="${card.id}"><div class="lane-grid">${cells}</div><div class="lane-children"><div class="lane-grid">${subCells}</div></div></section>`;
+}
+
+function renderSwimlane(card: Card, childrenOf: Map<number, Card[]>, ctx: RenderCtx): string {
+  if (card.type === 'task') return renderTaskLane(card, childrenOf, ctx);
+  return renderFocus(card, childrenOf, ctx);
 }
 
 function crumbs(origin: string, chain: Card[], current: Card, editing = false): string {
@@ -476,12 +494,11 @@ export function renderAll(opts: {
       childrenOf.set(card.parent_id, list);
     }
   }
-  const headers = STATUSES.map((status) => `<div>${e(status.name)}</div>`).join('');
   const lanes = bySwimlane(roots)
     .map((card) => renderSwimlane(card, childrenOf, ctx))
     .join('');
-  const body = `<h1>All</h1><p class="muted">Drag changes status among cards that share a parent. Open a card for its board. Edit is a separate page.</p>
-    <div class="board-wrap"><div class="lane-grid headers">${headers}</div>${lanes}</div>`;
+  const body = `<h1>All</h1><p class="muted">Goals, initiatives, and epics are bands. Drag a task or sub-task to change its status. Open a title for that board.</p>
+    ${lanes}`;
   return layout({
     origin: opts.origin,
     viewer: opts.viewer,
@@ -650,7 +667,14 @@ button, .button { display: inline-block; padding: 8px 14px; border: 0; border-ra
 .label-pink { background: #f8d9ea; color: #6b2448; }
 .late { color: #9b1c1c; font-weight: 650; background: #fde8e6; }
 .lane { margin: 0 0 10px; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(28, 36, 48, 0.04); }
-.lane-children { margin: 0 12px 12px 16px; padding-left: 12px; border-left: 2px solid var(--line); }
+.lane-goal, .lane-initiative, .lane-epic { box-shadow: none; padding: 8px 10px 10px; }
+.lane-goal { background: #e7f3ec; border-left: 4px solid #0f6b4c; }
+.lane-initiative { background: #e7f1fb; border-left: 4px solid #2a6fad; }
+.lane-epic { background: #fbf3e4; border-left: 4px solid #b5812a; }
+.focus-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-height: 2rem; }
+.focus-bar a { flex: 1; font-weight: 650; text-decoration: none; color: var(--ink); }
+.focus-bar a:hover { color: var(--accent); }
+.lane-children { margin: 8px 0 0 12px; padding-left: 12px; border-left: 2px solid var(--line); }
 .lane.collapsed .lane-children { display: none; }
 .banner { background: #fde8e6; color: #6f1d1d; padding: 10px 12px; border-radius: 12px; }
 .stack { display: grid; gap: 12px; }
@@ -681,7 +705,7 @@ button, .button { display: inline-block; padding: 8px 14px; border: 0; border-ra
 fieldset { border: 1px solid var(--line); border-radius: 12px; margin: 0; padding: 10px 12px; }
 `;
 
-// Swimlane order is priority, not rank, so an All-view status drop does not reorder.
+// Goals, initiatives, and epics are not draggable on All. Task and sub-task drops still set rank.
 const PAGE_SCRIPT = `
 (function () {
   var meta = document.querySelector('meta[name="csrf"]');
@@ -789,7 +813,7 @@ const PAGE_SCRIPT = `
       var id = dragging.getAttribute('data-id');
       var type = dragging.getAttribute('data-type');
       var status = cell.getAttribute('data-status') || '';
-      var reorder = board !== 'all' || type === 'subtask';
+      var reorder = board !== 'all' || type === 'task' || type === 'subtask';
       var from = dragging.closest('.cell');
       var fromStatus = from ? (from.getAttribute('data-status') || '') : '';
       if (!reorder && status === fromStatus) return;
