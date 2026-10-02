@@ -1,0 +1,19 @@
+{
+  "name": "gost",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A small Kanban board for one client.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "tsc && node --test dist/test/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "typescript": "5.9.3"
+  }
+}
