@@ -144,7 +144,7 @@ function renderMiniCard(card: Card, ctx: RenderCtx): string {
   const count = ctx.counts.get(card.id) ?? 0;
   const toggle =
     ctx.mode === 'all' && card.type !== 'subtask'
-      ? `<button type="button" class="lane-toggle quiet" aria-expanded="true">Collapse</button>`
+      ? `<button type="button" class="lane-toggle quiet" aria-expanded="true" aria-label="Collapse">▾</button>`
       : '';
   const statusOptions = STATUSES.map(
     (status) =>
@@ -212,7 +212,7 @@ function renderFocus(card: Card, childrenOf: Map<number, Card[]>, ctx: RenderCtx
       : kids.map((child) => renderSwimlane(child, childrenOf, ctx)).join('');
   return `<section class="lane lane-${card.type}" data-lane="${card.id}">
     <div class="focus-bar">
-      <button type="button" class="lane-toggle quiet" aria-expanded="true">Collapse</button>
+      <button type="button" class="lane-toggle quiet" aria-expanded="true" aria-label="Collapse">▾</button>
       <a href="${href(ctx.origin, '/cards/' + String(card.id))}">${e(card.title)}</a>
       <span class="chip${late ? ' late' : ''}">${e(statusName(card.status))}</span>
       <span class="pri pri-${card.priority}">${e(priorityName(card.priority))}</span>
@@ -668,10 +668,14 @@ button, .button { display: inline-block; padding: 8px 14px; border: 0; border-ra
 .late { color: #9b1c1c; font-weight: 650; background: #fde8e6; }
 .lane { margin: 0 0 10px; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(28, 36, 48, 0.04); }
 .lane-goal, .lane-initiative, .lane-epic { box-shadow: none; padding: 8px 10px 10px; }
-.lane-goal { background: #e7f3ec; border-left: 4px solid #0f6b4c; }
-.lane-initiative { background: #e7f1fb; border-left: 4px solid #2a6fad; }
-.lane-epic { background: #fbf3e4; border-left: 4px solid #b5812a; }
+.lane-goal { background: #e7f3ec; border-left: 2px solid #0f6b4c; }
+.lane-initiative { background: #e7f1fb; border-left: 2px solid #2a6fad; }
+.lane-epic { background: #fbf3e4; border-left: 2px solid #b5812a; }
+.lane-goal > .lane-children,
+.lane-initiative > .lane-children,
+.lane-epic > .lane-children { margin: 4px 0 0 4px; padding-left: 4px; border-left: 0; }
 .focus-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-height: 2rem; }
+.lane-toggle { padding: 0 4px; min-width: 1.25rem; line-height: 1; }
 .focus-bar a { flex: 1; font-weight: 650; text-decoration: none; color: var(--ink); }
 .focus-bar a:hover { color: var(--accent); }
 .lane-children { margin: 8px 0 0 12px; padding-left: 12px; border-left: 2px solid var(--line); }
@@ -735,11 +739,14 @@ const PAGE_SCRIPT = `
     if (!id || !collapsedStored(id)) return;
     lane.classList.add('collapsed');
     var btn = lane.querySelector('.lane-toggle');
-    if (btn) {
-      btn.setAttribute('aria-expanded', 'false');
-      btn.textContent = 'Expand';
-    }
+    if (btn) setToggle(btn, true);
   });
+
+  function setToggle(btn, collapsed) {
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    btn.setAttribute('aria-label', collapsed ? 'Expand' : 'Collapse');
+    btn.textContent = collapsed ? '\u25B8' : '\u25BE';
+  }
 
   document.querySelectorAll('.lane-toggle').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -747,8 +754,7 @@ const PAGE_SCRIPT = `
       if (!lane) return;
       var id = lane.getAttribute('data-lane');
       var collapsed = lane.classList.toggle('collapsed');
-      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-      btn.textContent = collapsed ? 'Expand' : 'Collapse';
+      setToggle(btn, collapsed);
       if (id) rememberCollapsed(id, collapsed);
     });
   });
