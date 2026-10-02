@@ -22,9 +22,9 @@ Open **Book the tickets** and the sub-tasks are the tiny steps. **Check the pass
 | Initiative | A big piece of that aim | Epics |
 | Epic | A chunk of work | Tasks |
 | Task | Something a person can take | Sub-tasks |
-| Sub-task | The next small step | The note and the comments |
+| Sub-task | The next small step | A short summary. Edit holds the note and comments. |
 
-Home is your goals. Open any card to go one level down.
+Home is your goals. Open any card to go one level down. That page is a summary and the next level. Edit is a separate page for the note, the date, who is doing it, and comments.
 
 ## Where a card sits
 

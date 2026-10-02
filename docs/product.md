@@ -8,7 +8,7 @@ There are two ways to see the work. Nested boards drill into one parent. The All
 
 ## Nested boards
 
-The home page is a board of Goals. Opening a card enters that card. The page shows the card's own fields, then the board of its children.
+The home page is a board of Goals. Opening a card shows a summary of that card, then the board of its children. Edit is a separate page for the fields, the comments, and delete.
 
 | Page | What the columns hold |
 | --- | --- |
@@ -17,7 +17,7 @@ The home page is a board of Goals. Opening a card enters that card. The page sho
 | Initiative | Epics |
 | Epic | Tasks |
 | Task | Sub-tasks |
-| Sub-task | No child board. Fields and comments only. |
+| Sub-task | No child board. A summary, and an edit page for the note and comments. |
 
 A breadcrumb walks back up the chain. Each card shows how many children it has. A card's column is its own status. That status is separate from how its children are arranged.
 
@@ -50,7 +50,7 @@ The All view is a second board of every card in the container. The columns are t
 - A swimlane can be collapsed. The collapsed state stays in the browser.
 - An empty parent still shows its swimlane.
 
-Dragging on the All view changes status only among cards that share a parent. A drop onto a different parent is refused. Creating a card, editing its fields, and reordering siblings happen on the nested board. The card title opens that nested page.
+Dragging on the All view changes status only among cards that share a parent. A drop onto a different parent is refused. Creating a card and reordering siblings happen on the nested board. The card title opens that page. Fields and comments are on the card's edit page.
 
 Home and every nested board link to the All view.
 

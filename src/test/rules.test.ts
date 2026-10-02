@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { openDatabase } from '../db.js';
 import { hashPassword, verifyPassword } from '../password.js';
-import { renderCardPage } from '../render.js';
+import { type CardPageModel, renderCardEdit, renderCardPage } from '../render.js';
 import {
   addComment,
   createCard,
@@ -284,7 +284,7 @@ test('HTML in a title or comment is stored as text and escaped when rendered', (
     assert.equal(stored?.title, title);
     assert.equal(comments[0]?.body, body);
 
-    const html = renderCardPage({
+    const model: CardPageModel = {
       origin: 'http://127.0.0.1:8080',
       viewer: { id: admin.id, email: admin.email, role: 'admin', csrf: 'csrf-token' },
       card: stored ?? card,
@@ -298,11 +298,17 @@ test('HTML in a title or comment is stored as text and escaped when rendered', (
       counts: new Map<number, number>(),
       today: '2026-10-01',
       error: null,
-    });
-    assert.equal(html.includes(title), false);
-    assert.equal(html.includes(body), false);
-    assert.ok(html.includes('&lt;img src=x onerror=alert(1)&gt;'));
-    assert.ok(html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
+    };
+    const board = renderCardPage(model);
+    const edit = renderCardEdit(model);
+    for (const html of [board, edit]) {
+      assert.equal(html.includes(title), false);
+      assert.equal(html.includes(body), false);
+    }
+    assert.ok(board.includes('&lt;img src=x onerror=alert(1)&gt;'));
+    assert.equal(board.includes('<textarea'), false);
+    assert.ok(edit.includes('&lt;img src=x onerror=alert(1)&gt;'));
+    assert.ok(edit.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
   } finally {
     db.close();
   }

@@ -5,6 +5,7 @@ import { openDatabase } from './db.js';
 import { hashPassword, verifyPassword } from './password.js';
 import {
   renderAll,
+  renderCardEdit,
   renderCardPage,
   renderHome,
   renderLogin,
@@ -452,7 +453,7 @@ function postAuthed(
   const cardComment = /^\/cards\/(\d+)\/comments$/.exec(path);
   if (cardComment) {
     const id = idFrom(cardComment[1]);
-    const next = safeNext(form.get('next'), '/cards/' + String(id));
+    const next = safeNext(form.get('next'), '/cards/' + String(id) + '/edit');
     runPost(req, res, config, next, () => {
       addComment(db, id, session.user.id, form.get('body') ?? '');
       redirect(res, config, next);
@@ -463,8 +464,8 @@ function postAuthed(
   const cardUpdate = /^\/cards\/(\d+)$/.exec(path);
   if (cardUpdate) {
     const id = idFrom(cardUpdate[1]);
-    const next = safeNext(form.get('next'), '/cards/' + String(id));
-    runPost(req, res, config, next, () => {
+    const boardPath = '/cards/' + String(id);
+    runPost(req, res, config, boardPath + '/edit', () => {
       const assigneeRaw = form.get('assignee_id') ?? '';
       const assigneeId = assigneeRaw === '' ? null : parseId(assigneeRaw);
       if (assigneeRaw !== '' && assigneeId == null) {
@@ -484,7 +485,7 @@ function postAuthed(
         status: form.get('status') ?? '',
         labelIds,
       });
-      redirect(res, config, next);
+      redirect(res, config, safeNext(form.get('next'), boardPath));
     });
     return;
   }
@@ -550,30 +551,28 @@ function getAuthed(
     );
     return;
   }
-  const cardMatch = /^\/cards\/(\d+)$/.exec(path);
+  const editMatch = /^\/cards\/(\d+)\/edit$/.exec(path);
+  const cardMatch = editMatch ?? /^\/cards\/(\d+)$/.exec(path);
   if (cardMatch) {
     try {
       const card = mustGetCard(db, idFrom(cardMatch[1]));
       const linked = labelsByCard(db);
-      html(
-        res,
-        200,
-        renderCardPage({
-          origin: config.origin,
-          viewer,
-          card,
-          chain: ancestors(db, card),
-          children: card.type === 'subtask' ? [] : listChildren(db, card.id),
-          comments: listComments(db, card.id),
-          labels: listLabels(db),
-          cardLabelIds: (linked.get(card.id) ?? []).map((label) => label.id),
-          labelsByCard: linked,
-          users: listUsers(db),
-          counts: childCounts(db),
-          today: todayUtc(),
-          error,
-        }),
-      );
+      const model = {
+        origin: config.origin,
+        viewer,
+        card,
+        chain: ancestors(db, card),
+        children: card.type === 'subtask' ? [] : listChildren(db, card.id),
+        comments: listComments(db, card.id),
+        labels: listLabels(db),
+        cardLabelIds: (linked.get(card.id) ?? []).map((label) => label.id),
+        labelsByCard: linked,
+        users: listUsers(db),
+        counts: childCounts(db),
+        today: todayUtc(),
+        error,
+      };
+      html(res, 200, editMatch ? renderCardEdit(model) : renderCardPage(model));
     } catch (err) {
       if (err instanceof Refusal && err.code === 'missing') {
         html(res, 404, renderStatus('Not found', err.message));
